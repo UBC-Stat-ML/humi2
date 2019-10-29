@@ -43,6 +43,7 @@ This will create the following output in the directory ``deliverables/GoF``
 
 - ``gof.pdf`` actual coverage of 90% credible intervals for a few observed quantities, shown across all datsets (x axis) and different methods (colours). Each actual coverage is averaged over the targets. 
 - ``width.pdf``: average interval widths
+- ``gof-data.csv``: statistics used for above plots
 - ``runs/[data]_[model]/``: contains details from the run, including
     - ``ess`` effective sample sizes
     - ``estimates.csv``: credible intervals
@@ -57,6 +58,7 @@ Some configurations available:
 ./nextflow run GoF.nf -resume [options]
 ```
 
+- ``--model "BNB MixBNB MixNBLocalLambdaMixBNB MixYS NB Poi YS"``: space-separated list of models to run (note required quotes)
 - ``--nScans 1000``: control number of MCMC scans (default 1000)
 - ``--nInitParticles 10``: increase this if model initialization fails (can happen in complex mixture models with vague priors, default 10)
 - ``nTargets INF``: use this to do inference on a subset of targets (e.g. for dry runs)
@@ -70,14 +72,34 @@ Some configurations available:
 ```
 
 
-### Running the Heldout diagnostics
+### Running the Holdout diagnostics
 
+```
+./nextflow run holdout.nf -resume --dataset X0569_422234x --maxNExperiments 4 --lastDataset X0569_4222344_clones
+```
 
+where:
+
+- ``dataset`` should give the name of one of the subdirectories in ``./data``
+- ``maxNExperiments`` should contain the number of replicates in that dataset
+- ``lastDataset``, the reference replicate, typically the last replicate code to appear in the final csv file
+
+Outputs and configurations are similar to the GoF code, the main exception being the following files in the ``deliverables/holdout`` directory:
+
+- ``generalization-coverage.pdf``: actual coverage for the reference dataset as more replicates are used
+- ``generalization-width.pdf``: width as a function of number of replicates used
+- ``gd-data.csv``: statistics used for above plots
 
 
 ### Running the analysis pipeline
 
 
-/// Update
+```
+./nextflow run poset-pipeline.nf -resume
+```
 
+Again, outputs and configurations are similar to the GoF code, the main exception being the following files in the ``deliverables/poset-pipeline`` directory:
 
+- ``posets/[dataset]_[model].dot``: poset in dot format
+
+Also, by default all replicates are used, this can be controlled with the switch ``--nExperiments``, for example ``--nExperiments 1`` to use at most 1 replicates.

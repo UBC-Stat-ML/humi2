@@ -1,25 +1,38 @@
 #!/usr/bin/env nextflow
 
-deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','')
+import java.util.stream.Collectors
+
+
 
 pwd=new File(".").getAbsolutePath()
 
-params.finalCounts
-params.initialCounts
-params.maxNExperiments
-params.lastDataset
+params.dataset = "X0569_422234x"
+params.maxNExperiments = 4
+params.lastDataset = "X0569_4222344_clones"
 
 expSizes = 1..params.maxNExperiments
 
-finalCounts = new File(params.finalCounts)
-initialCounts = new File(params.initialCounts)
+params.model = "BNB LocalLambdaMixBNB MixBNB MixNB MixYS NB Poi YS"
+
+params.nScans = 1000
+params.nInitParticles = 10 // increase this if model initialization fails (can happen in complex mixture models with vague priors)
+params.nTargets = "INF" // use this to do inference on a subset of targets (e.g. for dry runs)
+
+deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "/" + params.dataset  + "/"
+runsDir = deliverableDir + "runs" 
+
+models = Arrays.asList(params.model.split("\\s+")).stream().map{
+  result = "humi.models." + it
+  println("Queuing model " + result)
+  return result
+}.collect(Collectors.toList())
 
 process buildCode {
   cache true 
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '1ab29b6288358aa6c0004f830313b3aab2668d5f'
+    val codeRevision from '5b84c0aa2255c4cb932517bf16b52656e0a1eadc'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -28,29 +41,37 @@ process buildCode {
 }
 
 process run {
+
+  // uncomment to use on cluster:
+  // cpus 1
+  // executor 'sge'
+  // memory '5 GB'
+  // time '50h'
+
   input:
     file code
+    each model from models
     each expSize from expSizes
-    each model from 'humi.models.NB', 'humi.models.MixBNB', 'humi.models.BNB', 'humi.models.Poi', 'humi.models.MixNB', 'humi.models.GlobalLambdaMixBNB'
   output:
-    file 'results/latest' into runs
+    file "${model}_${expSize}" into runs
+  publishDir runsDir, mode: 'link'
 """
   java -cp code/lib/\\* -Xmx5g $model   \
-           --model.initialPopCounts.dataSource $initialCounts \
+           --model.initialPopCounts.dataSource $pwd/data/$params.dataset/initial.csv \
            --model.initialPopCounts.name counts  \
-           --model.data.source $finalCounts \
+           --model.data.source $pwd/data/$params.dataset/final.csv \
            --model.data.genes.name gene     \
            --model.data.targets.name sgRNA     \
-           --model.data.targets.maxSize INF \
+           --model.data.targets.maxSize $params.nTargets \
            --model.data.experiments.name dataset     \
            --model.data.experiments.maxSize $expSize \
            --model.data.histograms.name histogram     \
-           --engine.nScans 1000   \
+           --engine.nScans $params.nScans   \
            --engine.nChains 1 \
            --engine.nPassesPerScan 1     \
            --engine.nThreads Fixed     \
            --engine.nThreads.number 1 \
-           --engine.scmInit.nParticles 10 \
+           --engine.scmInit.nParticles $params.nInitParticles \
            --engine.scmInit.temperatureSchedule.threshold 0.9 \
            --engine.scmInit.nThreads Fixed \
            --engine.scmInit.nThreads.number 1 \
@@ -60,6 +81,7 @@ process run {
            --postProcessor.data.experiments.name dataset \
            --postProcessor.data.histograms.name histogram \
            --postProcessor.runPxviz false
+  mv results/all/`ls results/all` ${model}_${expSize}
   """
 }
 
