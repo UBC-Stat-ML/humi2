@@ -101,5 +101,6 @@ Outputs and configurations are similar to the GoF code, the main exception being
 Again, outputs and configurations are similar to the GoF code, the main exception being the following files in the ``deliverables/poset-pipeline`` directory:
 
 - ``posets/[dataset]_[model].dot``: poset in dot format
+- ``posets/[condition1]_[condition2]_[conditioni].dot`` poset comparisons between condition 1 and condition 2, showing for condition i an assignment of edge changes into vertices that are likely to have changed position
 
 Also, by default all replicates are used, this can be controlled with the switch ``--nExperiments``, for example ``--nExperiments 1`` to use at most 1 replicates.

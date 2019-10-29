@@ -85,22 +85,42 @@ process run {
            --postProcessor.data.histograms.name histogram \
            --postProcessor.runPxviz false
   mv results/all/`ls results/all` ${dataset}_${model}
+  touch ${dataset}_${model}/condition_${dataset}_${model}
   """
 }
 
-process poset {
+process posets {
   input:
     file code
-    file run from runs
+    file 'exec_*' from runs.toList()
   output:
     file "*.dot"
   publishDir posetsDir, mode: 'copy', overwrite: true
   """
-  java -cp code/lib/\\* -Xmx1g humi.posets.Intervals2Poset \
-    --intervalsCSVFile $run/estimates.csv
-  mv results/latest/hasse.dot ${run}.dot
+  nDirectories=`ls | grep exec | wc -l`
+  for ((i = 1 ; i <= \$nDirectories ; i++))  
+  do
+    exec1=exec_\$i
+    cond1=`ls \$exec1 | grep condition | sed 's/condition[_]//'`
+    java -cp code/lib/\\* -Xmx1g humi.posets.Intervals2Poset \
+      --intervalsCSVFile \$exec1/estimates.csv
+    mv results/latest/hasse.dot \$cond1.dot
+    for ((j = \$i + 1 ; j <= \$nDirectories ; j++))
+    do
+      exec2=exec_\$j
+      cond2=`ls \$exec2 | grep condition | sed 's/condition[_]//'`
+      java -cp code/lib/\\* -Xmx1g humi.posets.ComparePosets \
+        --condition1.intervalsCSVFile \$exec1/estimates.csv \
+        --condition2.intervalsCSVFile \$exec2/estimates.csv \
+        --condition1Label \$cond1 \
+        --condition2Label \$cond2
+      mv results/latest/\$cond1.dot compare_\${cond1}_\${cond2}_\$cond1.dot
+      mv results/latest/\$cond2.dot compare_\${cond1}_\${cond2}_\$cond2.dot
+    done
+  done
   """
 }
+
 
 process analysisCode {
   input:
