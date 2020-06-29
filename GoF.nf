@@ -16,9 +16,9 @@ params.model = "BNB LocalLambdaMixBNB MixBNB MixNB MixYS NB Poi YS"
 params.nScans = 1000
 params.nInitParticles = 10 // increase this if model initialization fails (can happen in complex mixture models with vague priors)
 params.nTargets = "INF" // use this to do inference on a subset of targets (e.g. for dry runs)
+params.nChains = 1
 
-
-deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "/"
+deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "_" + params.nChains + "/"
 runsDir = deliverableDir + "runs" 
 
 models = Arrays.asList(params.model.split("\\s+")).stream().map{
@@ -32,7 +32,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '5b84c0aa2255c4cb932517bf16b52656e0a1eadc'
+    val codeRevision from '1b761453b53ffed70f633b8a353b01a3a483ccff'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -58,6 +58,8 @@ process run {
 """
   ln -s $pwd/data/$dataset/final.csv ${dataset}.csv  # o.w. spark crash on it
   java -cp code/lib/\\* -Xmx1g $model   \
+           --experimentConfigs.resultsHTMLPage false \
+           --experimentConfigs.tabularWriter.compressed true \
            --model.initialPopCounts.dataSource $pwd/data/$dataset/initial.csv \
            --model.initialPopCounts.name counts  \
            --model.data.source ${dataset}.csv \
@@ -68,7 +70,7 @@ process run {
            --model.data.experiments.maxSize 1 \
            --model.data.histograms.name histogram     \
            --engine.nScans $params.nScans   \
-           --engine.nChains 1 \
+           --engine.nChains $params.nChains \
            --engine.nPassesPerScan 1     \
            --engine.nThreads Fixed     \
            --engine.nThreads.number 1 \
@@ -83,6 +85,7 @@ process run {
            --postProcessor.data.histograms.name histogram \
            --postProcessor.runPxviz false
   mv results/all/`ls results/all` ${dataset}_${model}
+  gunzip ${dataset}_${model}/gof.csv.gz
   """
 }
 
@@ -90,7 +93,7 @@ process analysisCode {
   input:
     val gitRepoName from 'nedry'
     val gitUser from 'alexandrebouchard'
-    val codeRevision from 'cf1a17574f19f22c4caf6878669df921df27c868'
+    val codeRevision from 'e64ec5f5acd87bf85f7de9bc6f51dc5a51fd0662'
     val snapshotPath from "${System.getProperty('user.home')}/w/nedry"
   output:
     file 'code' into analysisCode
