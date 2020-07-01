@@ -72,8 +72,7 @@ process run {
            --engine.nScans $params.nScans   \
            --engine.nChains $params.nChains \
            --engine.nPassesPerScan 1     \
-           --engine.nThreads Fixed     \
-           --engine.nThreads.number 1 \
+           --engine.nThreads Max     \
            --engine.scmInit.nParticles $params.nInitParticles \
            --engine.scmInit.temperatureSchedule.threshold 0.6 \
            --engine.scmInit.nThreads Fixed \
