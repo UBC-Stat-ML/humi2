@@ -32,7 +32,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '100962e227e1ce82b7aba7f0053b26d0f93bb3e6'
+    val codeRevision from '523c6752c72581983b248978a4c01e64be4a1030'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -71,8 +71,8 @@ process run {
            --model.data.histograms.name histogram     \
            --engine.nScans $params.nScans   \
            --engine.nChains $params.nChains \
-           --engine.nPassesPerScan 0.01 \
-           --engine.thinning 50 \
+           --engine.nPassesPerScan 1 \
+           --engine.thinning 1 \
            --engine.nThreads Max     \
            --engine.scmInit.nParticles $params.nInitParticles \
            --engine.scmInit.temperatureSchedule.threshold 0.6 \
@@ -85,7 +85,13 @@ process run {
            --postProcessor.runPxviz false
   mv results/all/`ls results/all` ${dataset}_${model}
   gunzip ${dataset}_${model}/gof.csv.gz
+  gunzip ${dataset}_${model}/monitoring/logNormalizationContantProgress.csv.gz
   """
+}
+
+runs.into {
+  runs1
+  runs2
 }
 
 process analysisCode {
@@ -103,7 +109,7 @@ process analysisCode {
 process aggregate {
   input:
     file analysisCode
-    file 'exec_*' from runs.toList()
+    file 'exec_*' from runs1.toList()
   output:
     file 'results/latest/aggregated' into aggregated
   """
@@ -153,6 +159,57 @@ process plot {
     theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
 
   ggsave(plot = p, filename = "width.pdf")
+  """
+}
+
+process aggregateLogNorm {
+  input:
+    file analysisCode
+    file 'exec_*' from runs2.toList()
+  output:
+    file 'results/latest/aggregated' into aggregatedLogNorm
+  """
+  code/bin/aggregate \
+    --dataPathInEachExecFolder monitoring/logNormalizationContantProgress.csv \
+    --keys model.data.source as data model from arguments.tsv
+  """
+}
+
+process plotLogNorm {
+  input:
+    file aggregatedLogNorm
+    env SPARK_HOME from "${System.getProperty('user.home')}/bin/spark-2.1.0-bin-hadoop2.7"
+  output:
+    file '*.csv'
+    file '*.pdf'
+  publishDir deliverableDir, mode: 'copy', overwrite: true
+  afterScript 'rm -r metastore_db; rm derby.log'
+  """
+  #!/usr/bin/env Rscript
+  require("ggplot2")
+  require("stringr")
+  library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+  sparkR.session(master = "local[*]", sparkConfig = list(spark.driver.memory = "4g"))
+
+  data <- read.df("$aggregatedLogNorm", "csv", header="true", inferSchema="true")
+  data <- collect(data)
+  
+  data\$model <- str_replace_all(data\$model, "[\$].*", "")
+  data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
+  
+  write.csv(data, file="evidence.csv")
+  
+  require("dplyr")
+  data <- data %>% filter(round > 3)
+  
+  p <- ggplot(data, aes(x = round, y = value, colour = model, group = model)) + 
+    geom_line() + 
+    facet_grid(data ~ ., scales="free") + 
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
+
+  ggsave(plot = p, filename = "evidence.pdf")
+
   """
 }
 
