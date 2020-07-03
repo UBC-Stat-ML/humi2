@@ -32,7 +32,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from 'af96d9b693c05f43a0de281d498df80adaf0eadc'
+    val codeRevision from '100962e227e1ce82b7aba7f0053b26d0f93bb3e6'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -72,7 +72,7 @@ process run {
            --engine.nScans $params.nScans   \
            --engine.nChains $params.nChains \
            --engine.nPassesPerScan 0.01 \
-           --engine.thinning 10 \
+           --engine.thinning 50 \
            --engine.nThreads Max     \
            --engine.scmInit.nParticles $params.nInitParticles \
            --engine.scmInit.temperatureSchedule.threshold 0.6 \
