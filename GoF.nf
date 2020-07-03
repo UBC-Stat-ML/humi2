@@ -97,8 +97,8 @@ runs.into {
 process analysisCode {
   input:
     val gitRepoName from 'nedry'
-    val gitUser from 'alexandrebouchard'
-    val codeRevision from 'e64ec5f5acd87bf85f7de9bc6f51dc5a51fd0662'
+    val gitUser from 'UBC-Stat-ML'
+    val codeRevision from 'e7893230d0bb6b6dedad9499532f3716286e62ba'
     val snapshotPath from "${System.getProperty('user.home')}/w/nedry"
   output:
     file 'code' into analysisCode
@@ -111,7 +111,7 @@ process aggregate {
     file analysisCode
     file 'exec_*' from runs1.toList()
   output:
-    file 'results/latest/aggregated' into aggregated
+    file 'results/latest/aggregated.csv' into aggregated
   """
   code/bin/aggregate \
     --dataPathInEachExecFolder gof.csv \
@@ -122,21 +122,16 @@ process aggregate {
 process plot {
   input:
     file aggregated
-    env SPARK_HOME from "${System.getProperty('user.home')}/bin/spark-2.1.0-bin-hadoop2.7"
   output:
     file '*.csv'
     file '*.pdf'
   publishDir deliverableDir, mode: 'copy', overwrite: true
-  afterScript 'rm -r metastore_db; rm derby.log'
   """
   #!/usr/bin/env Rscript
   require("ggplot2")
   require("stringr")
-  library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
-  sparkR.session(master = "local[*]", sparkConfig = list(spark.driver.memory = "4g"))
 
-  data <- read.df("$aggregated", "csv", header="true", inferSchema="true")
-  data <- collect(data)
+  data <- read.csv("$aggregated")
   
   data\$model <- str_replace_all(data\$model, "[\$].*", "")
   data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
@@ -167,7 +162,7 @@ process aggregateLogNorm {
     file analysisCode
     file 'exec_*' from runs2.toList()
   output:
-    file 'results/latest/aggregated' into aggregatedLogNorm
+    file 'results/latest/aggregated.csv' into aggregatedLogNorm
   """
   code/bin/aggregate \
     --dataPathInEachExecFolder monitoring/logNormalizationContantProgress.csv \
@@ -178,28 +173,24 @@ process aggregateLogNorm {
 process plotLogNorm {
   input:
     file aggregatedLogNorm
-    env SPARK_HOME from "${System.getProperty('user.home')}/bin/spark-2.1.0-bin-hadoop2.7"
   output:
     file '*.csv'
     file '*.pdf'
   publishDir deliverableDir, mode: 'copy', overwrite: true
-  afterScript 'rm -r metastore_db; rm derby.log'
   """
   #!/usr/bin/env Rscript
   require("ggplot2")
   require("stringr")
-  library(SparkR, lib.loc = c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
-  sparkR.session(master = "local[*]", sparkConfig = list(spark.driver.memory = "4g"))
+  require("dplyr")
 
-  data <- read.df("$aggregatedLogNorm", "csv", header="true", inferSchema="true")
-  data <- collect(data)
+  data <- read.csv("$aggregatedLogNorm")
   
   data\$model <- str_replace_all(data\$model, "[\$].*", "")
   data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
   
   write.csv(data, file="evidence.csv")
   
-  require("dplyr")
+  
   data <- data %>% filter(round > 3)
   
   p <- ggplot(data, aes(x = round, y = value, colour = model, group = model)) + 
