@@ -32,7 +32,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '523c6752c72581983b248978a4c01e64be4a1030'
+    val codeRevision from '5c3a22fc411394c424170b1bfb6da12c705cc2ef'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -84,8 +84,6 @@ process run {
            --postProcessor.data.histograms.name histogram \
            --postProcessor.runPxviz false
   mv results/all/`ls results/all` ${dataset}_${model}
-  gunzip ${dataset}_${model}/gof.csv.gz
-  gunzip ${dataset}_${model}/monitoring/logNormalizationContantProgress.csv.gz
   """
 }
 
@@ -114,7 +112,7 @@ process aggregate {
     file 'results/latest/aggregated.csv' into aggregated
   """
   code/bin/aggregate \
-    --dataPathInEachExecFolder gof.csv \
+    --dataPathInEachExecFolder gof.csv.gz \
     --keys model.data.source as data model from arguments.tsv
   """
 }
@@ -165,7 +163,7 @@ process aggregateLogNorm {
     file 'results/latest/aggregated.csv' into aggregatedLogNorm
   """
   code/bin/aggregate \
-    --dataPathInEachExecFolder monitoring/logNormalizationContantProgress.csv \
+    --dataPathInEachExecFolder monitoring/logNormalizationContantProgress.csv.gz \
     --keys model.data.source as data model from arguments.tsv
   """
 }
@@ -191,7 +189,7 @@ process plotLogNorm {
   write.csv(data, file="evidence.csv")
   
   
-  data <- data %>% filter(round > 3)
+  #data <- data %>% filter(round > 3)
   
   p <- ggplot(data, aes(x = round, y = value, colour = model, group = model)) + 
     geom_line() + 
@@ -199,7 +197,7 @@ process plotLogNorm {
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
 
-  ggsave(plot = p, filename = "evidence.pdf")
+  ggsave(plot = p, filename = "evidence.pdf", height = 20)
 
   """
 }
