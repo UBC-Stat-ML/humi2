@@ -33,7 +33,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '5b84c0aa2255c4cb932517bf16b52656e0a1eadc'
+    val codeRevision from 'e9bcd20efaab1005b0f8fd373dcccc4d285a3f8b'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -88,7 +88,8 @@ process run {
            --postProcessor.data.genes.name gene \
            --postProcessor.data.experiments.name dataset \
            --postProcessor.data.histograms.name histogram \
-           --postProcessor.runPxviz false
+           --postProcessor.runPxviz false \
+           --postProcessor.onlyComputeEstimates true
   
   """
 }
