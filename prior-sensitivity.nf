@@ -147,13 +147,11 @@ process plot {
   
   data <- read.csv("$aggregated")
   
-  
-  cols = rainbow(200, s=.6, v=.9)[sample(1:200,200)]
-  p <- ggplot(data, aes(x = factor(priorHyperParameter), y = logRatio, colour = factor(sgrna))) + 
+  p <- ggplot(data, aes(x = factor(priorHyperParameter), y = logRatio)) + 
     coord_flip() + 
     geom_errorbar(aes(ymin=logRatioLeftBound, ymax=logRatioRightBound)) +
     geom_point() + 
-    facet_grid(factor(gene) + factor(sgrna)  ~ dataset + model) +
+    facet_grid(gene + sgrna ~ dataset + model) +
     theme_bw() + 
     xlab("Gene") + 
     ylab("log(ratio)") + 
