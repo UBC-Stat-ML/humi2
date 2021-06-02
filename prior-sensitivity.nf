@@ -53,7 +53,6 @@ process pullDockerImages {
 process run {
 
   time '1h'
-  container 'cgrlab/tidyverse'
   input:
     file code
     each model from models
