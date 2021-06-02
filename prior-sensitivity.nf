@@ -156,10 +156,9 @@ process plot {
     xlab("Gene") + 
     ylab("log(ratio)") + 
     ggtitle("Ratio of clone sizes relative to controls", subtitle = "Bayesian hierarchical model credible intervals") + 
-    scale_colour_manual(values=cols) + 
     geom_hline(yintercept=0) + 
     theme(legend.position="none") 
-  ggsave(plot = p, filename = "intervals-sensitivity.pdf", height = 100, limitsize = FALSE)
+  ggsave(plot = p, filename = "intervals-sensitivity.pdf", height = 100, width = 20, limitsize = FALSE)
 
   """
 }
