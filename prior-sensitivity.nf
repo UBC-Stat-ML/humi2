@@ -41,10 +41,19 @@ process buildCode {
     template 'buildRepo.sh' 
 }
 
+process pullDockerImages {
+  container 'cgrlab/tidyverse'
+  executor 'local'
+  scratch false
+  """
+  echo OK
+  """
+}
+
 process run {
 
   time '1h'
-
+  container 'cgrlab/tidyverse'
   input:
     file code
     each model from models
@@ -116,6 +125,7 @@ process aggregate {
     --experimentConfigs.resultsHTMLPage false \
     --dataPathInEachExecFolder estimates.csv \
     --keys \
+      model \
       model.data.source as dataset \
       model.vagueRate as priorHyperParameter \
            from arguments.tsv
@@ -143,7 +153,7 @@ process plot {
     coord_flip() + 
     geom_errorbar(aes(ymin=logRatioLeftBound, ymax=logRatioRightBound)) +
     geom_point() + 
-    facet_grid(factor(gene) + factor(sgrna)  ~ dataset) +
+    facet_grid(factor(gene) + factor(sgrna)  ~ dataset + model) +
     theme_bw() + 
     xlab("Gene") + 
     ylab("log(ratio)") + 
