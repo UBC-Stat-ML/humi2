@@ -52,7 +52,7 @@ process pullDockerImages {
 
 process run {
 
-  time '1h'
+  time '10h'
   errorStrategy 'ignore'
   input:
     file code
