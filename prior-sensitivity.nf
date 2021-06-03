@@ -53,6 +53,7 @@ process pullDockerImages {
 process run {
 
   time '1h'
+  errorStrategy 'ignore'
   input:
     file code
     each model from models
