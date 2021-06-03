@@ -13,11 +13,13 @@ datasets = Channel.fromPath( 'data/*', type: 'dir' ).filter{
 params.model = "BNB LocalLambdaMixBNB MixBNB MixNB MixYS NB Poi YS"
 
 params.nScans = 1000
+params.nCores = 1
+params.nChains = 1
 params.nInitParticles = 10 // increase this if model initialization fails (can happen in complex mixture models with vague priors)
 params.nTargets = "INF" // use this to do inference on a subset of targets (e.g. for dry runs)
 params.nExperiments = "INF"
 
-deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "_" + params.nExperiments + "/"
+deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "_" + params.nExperiments + "_" + params.nChains  + "/"
 runsDir = deliverableDir + "runs" 
 posetsDir = deliverableDir + "posets" 
 
@@ -52,6 +54,7 @@ process pullDockerImages {
 
 process run {
 
+  cpus params.nCores
   time '10h'
   errorStrategy 'ignore'
   input:
@@ -75,10 +78,10 @@ process run {
            --model.data.histograms.name histogram     \
            --model.vagueRate $vague \
            --engine.nScans $params.nScans   \
-           --engine.nChains 1 \
+           --engine.nChains $params.nChains \
            --engine.nPassesPerScan 1     \
            --engine.nThreads Fixed     \
-           --engine.nThreads.number 1 \
+           --engine.nThreads.number $params.nCores \
            --engine.scmInit.nParticles $params.nInitParticles \
            --engine.scmInit.temperatureSchedule.threshold 0.6 \
            --engine.scmInit.nThreads Fixed \
