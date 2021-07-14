@@ -32,7 +32,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '5c3a22fc411394c424170b1bfb6da12c705cc2ef'
+    val codeRevision from '1280e5e400e208d002b40ba0a6831ccd23101173'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -42,11 +42,8 @@ process buildCode {
 
 process run {
 
-  // uncomment to use on cluster:
-  // cpus 1
-  // executor 'sge'
-  // memory '1 GB'
-  // time '10h'
+  time '10h'
+  errorStrategy 'ignore'
 
   input:
     file code
@@ -82,7 +79,8 @@ process run {
            --postProcessor.data.genes.name gene \
            --postProcessor.data.experiments.name dataset \
            --postProcessor.data.histograms.name histogram \
-           --postProcessor.runPxviz false
+           --postProcessor.runPxviz false \
+           --postProcessor.onlyComputeEstimates true
   mv results/all/`ls results/all` ${dataset}_${model}
   """
 }
@@ -118,6 +116,8 @@ process aggregate {
 }
 
 process plot {
+  scratch false
+  container 'cgrlab/tidyverse'
   input:
     file aggregated
   output:
