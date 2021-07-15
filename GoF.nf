@@ -30,6 +30,7 @@ models = Arrays.asList(params.model.split("\\s+")).stream().map{
 
 process buildCode {
   cache true 
+  executor 'local'
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
@@ -43,7 +44,7 @@ process buildCode {
 
 process run {
 
-  time '10h'
+  time '20h'
   errorStrategy 'ignore'
 
   input:
@@ -92,6 +93,7 @@ runs.into {
 }
 
 process analysisCode {
+  executor 'local'
   input:
     val gitRepoName from 'nedry'
     val gitUser from 'UBC-Stat-ML'
