@@ -11,12 +11,13 @@ datasets = Channel.fromPath( 'data/*', type: 'dir' ).filter{
   return result
 }.map{it.getName().toString()}
 
-params.model = "BNB LocalLambdaMixBNB MixBNB MixNB MixYS NB Poi YS"
+params.model = "BNB LocalLambdaMixBNB MixBNB MixNB MixYS NB Poi YS MultiHit"
 
 params.nScans = 1000
 params.nInitParticles = 10 // increase this if model initialization fails (can happen in complex mixture models with vague priors)
 params.nTargets = "INF" // use this to do inference on a subset of targets (e.g. for dry runs)
 params.nChains = 1
+params.onlyComputeEstimates = true
 
 deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "_" + params.nChains + "/"
 runsDir = deliverableDir + "runs" 
@@ -32,7 +33,7 @@ process buildCode {
   input:
     val gitRepoName from 'nowellpack'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from '1280e5e400e208d002b40ba0a6831ccd23101173'
+    val codeRevision from '14401b92c277ddc5994ee869fc336f8f091f7374'
     val snapshotPath from "${System.getProperty('user.home')}/w/nowellpack"
   output:
     file 'code' into code
@@ -80,7 +81,7 @@ process run {
            --postProcessor.data.experiments.name dataset \
            --postProcessor.data.histograms.name histogram \
            --postProcessor.runPxviz false \
-           --postProcessor.onlyComputeEstimates true
+           --postProcessor.onlyComputeEstimates $params.onlyComputeEstimates
   mv results/all/`ls results/all` ${dataset}_${model}
   """
 }
@@ -155,7 +156,9 @@ process plot {
   """
 }
 
+
 process aggregateLogNorm {
+  errorStrategy 'ignore'
   input:
     file analysisCode
     file 'exec_*' from runs2.toList()
@@ -169,6 +172,7 @@ process aggregateLogNorm {
 }
 
 process plotLogNorm {
+  errorStrategy 'ignore'
   input:
     file aggregatedLogNorm
   output:
@@ -201,6 +205,7 @@ process plotLogNorm {
 
   """
 }
+
 
 process summarizePipeline {
   cache false 
