@@ -97,7 +97,7 @@ process analysisCode {
   input:
     val gitRepoName from 'nedry'
     val gitUser from 'UBC-Stat-ML'
-    val codeRevision from 'e7893230d0bb6b6dedad9499532f3716286e62ba'
+    val codeRevision from 'a9abcc40abcfb285588cc4c312d8ecc0bbdad06e'
     val snapshotPath from "${System.getProperty('user.home')}/w/nedry"
   output:
     file 'code' into analysisCode
@@ -110,10 +110,11 @@ process aggregate {
     file analysisCode
     file 'exec_*' from runs1.toList()
   output:
-    file 'results/latest/aggregated.csv' into aggregated
+    file 'results/latest/' into aggregated
   """
   code/bin/aggregate \
-    --dataPathInEachExecFolder gof.csv.gz \
+    --experimentConfigs.resultsHTMLPage false \
+    --dataPathInEachExecFolder gof.csv.gz estimates.csv.gz \
     --keys model.data.source as data model from arguments.tsv
   """
 }
@@ -132,7 +133,7 @@ process plot {
   require("ggplot2")
   require("stringr")
 
-  data <- read.csv("$aggregated")
+  data <- read.csv("$aggregated/gof.csv")
   
   data\$model <- str_replace_all(data\$model, "[\$].*", "")
   data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
@@ -155,6 +156,23 @@ process plot {
     theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
 
   ggsave(plot = p, filename = "width.pdf")
+  
+  
+  data <- read.csv("$aggregated/estimates.csv")
+  
+  p <- ggplot(data, aes(x = factor(model), y = logRatio)) + 
+    coord_flip() + 
+    geom_errorbar(aes(ymin=logRatioLeftBound, ymax=logRatioRightBound)) +
+    geom_point() + 
+    facet_grid(gene + sgrna ~ data) +
+    theme_bw() + 
+    xlab("Gene") + 
+    ylab("log(ratio)") + 
+    ggtitle("Ratio of clone sizes relative to controls", subtitle = "Bayesian hierarchical model credible intervals") + 
+    geom_hline(yintercept=0) + 
+    theme(legend.position="none") 
+  ggsave(plot = p, filename = "intervals-multi.pdf", height = 100, width = 20, limitsize = FALSE)
+
   """
 }
 
