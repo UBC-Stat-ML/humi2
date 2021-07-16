@@ -164,7 +164,10 @@ process plot {
   
   data <- read.csv("$aggregated/estimates.csv")
   
-  p <- ggplot(data, aes(x = factor(model), y = logRatio)) + 
+  data\$model <- str_replace_all(data\$model, "[\$].*", "")
+  data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
+  
+  p <- ggplot(data, aes(x = factor(model), y = logRatio, colour = model)) + 
     coord_flip() + 
     geom_errorbar(aes(ymin=logRatioLeftBound, ymax=logRatioRightBound)) +
     geom_point() + 
