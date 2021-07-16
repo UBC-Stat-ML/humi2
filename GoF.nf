@@ -89,10 +89,6 @@ process run {
   """
 }
 
-runs.into {
-  runs1
-  runs2
-}
 
 process analysisCode {
   executor 'local'
@@ -110,7 +106,7 @@ process analysisCode {
 process aggregate {
   input:
     file analysisCode
-    file 'exec_*' from runs1.toList()
+    file 'exec_*' from runs.toList()
   output:
     file 'output' into aggregated
   """
@@ -122,7 +118,7 @@ process aggregate {
   mkdir output
   mv gof.csv output
   mv estimates.csv output
-  mv logNormalizationContantProgress.csv output
+  mv logNormalizationContantProgress.csv output || true
   """
 }
 
@@ -182,46 +178,14 @@ process plot {
     geom_hline(yintercept=0) + 
     theme(legend.position="none") 
   ggsave(plot = p, filename = "intervals-multi.pdf", height = 100, width = 20, limitsize = FALSE)
-
-  """
-}
-
-
-process aggregateLogNorm {
-  errorStrategy 'ignore'
-  input:
-    file analysisCode
-    file 'exec_*' from runs2.toList()
-  output:
-    file 'results/latest/aggregated.csv' into aggregatedLogNorm
-  """
-  code/bin/aggregate \
-    --dataPathInEachExecFolder monitoring/logNormalizationContantProgress.csv.gz \
-    --keys model.data.source as data model from arguments.tsv
-  """
-}
-
-process plotLogNorm {
-  errorStrategy 'ignore'
-  input:
-    file aggregatedLogNorm
-  output:
-    file '*.csv'
-    file '*.pdf'
-  publishDir deliverableDir, mode: 'copy', overwrite: true
-  """
-  #!/usr/bin/env Rscript
-  require("ggplot2")
-  require("stringr")
-  require("dplyr")
-
-  data <- read.csv("$aggregatedLogNorm")
+  
+  
+  data <- read.csv("$aggregated/logNormalizationContantProgress.csv")
   
   data\$model <- str_replace_all(data\$model, "[\$].*", "")
   data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
   
   write.csv(data, file="evidence.csv")
-  
   
   #data <- data %>% filter(round > 3)
   
@@ -237,15 +201,3 @@ process plotLogNorm {
 }
 
 
-process summarizePipeline {
-  cache false 
-  output:
-      file 'pipeline-info.txt'
-  publishDir deliverableDir, mode: 'copy', overwrite: true
-  """
-  echo 'scriptName: $workflow.scriptName' >> pipeline-info.txt
-  echo 'start: $workflow.start' >> pipeline-info.txt
-  echo 'runName: $workflow.runName' >> pipeline-info.txt
-  echo 'nextflow.version: $workflow.nextflow.version' >> pipeline-info.txt
-  """
-}
