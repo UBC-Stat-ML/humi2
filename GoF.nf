@@ -117,7 +117,7 @@ process aggregate {
   code/bin/aggregate \
     --experimentConfigs.managedExecutionFolder false \
     --experimentConfigs.resultsHTMLPage false \
-    --dataPathInEachExecFolder gof.csv.gz estimates.csv.gz \
+    --dataPathInEachExecFolder gof.csv.gz estimates.csv.gz monitoring/logNormalizationContantProgress.csv.gz \
     --keys model.data.source as data model from arguments.tsv
   mkdir output
   mv gof.csv output
