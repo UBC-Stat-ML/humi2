@@ -17,6 +17,7 @@ params.nScans = 1000
 params.nInitParticles = 10 // increase this if model initialization fails (can happen in complex mixture models with vague priors)
 params.nTargets = "INF" // use this to do inference on a subset of targets (e.g. for dry runs)
 params.nChains = 1
+params.nCores = 1
 params.onlyComputeEstimates = true
 
 deliverableDir = 'deliverables/' + workflow.scriptName.replace('.nf','') + "_" + params.nScans + "_" + params.nInitParticles + "_" + params.nTargets + "_" + params.nChains + "/"
@@ -44,8 +45,9 @@ process buildCode {
 
 process run {
 
-  time '20h'
+  time '30h'
   errorStrategy 'ignore'
+  cpus params.nCores
 
   input:
     file code
