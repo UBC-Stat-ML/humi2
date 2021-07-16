@@ -179,23 +179,24 @@ process plot {
     theme(legend.position="none") 
   ggsave(plot = p, filename = "intervals-multi.pdf", height = 100, width = 20, limitsize = FALSE)
   
+  if (file.exists("$aggregated/logNormalizationContantProgress.csv")) {
+    data <- read.csv("$aggregated/logNormalizationContantProgress.csv")
   
-  data <- read.csv("$aggregated/logNormalizationContantProgress.csv")
+    data\$model <- str_replace_all(data\$model, "[\$].*", "")
+    data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
   
-  data\$model <- str_replace_all(data\$model, "[\$].*", "")
-  data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
+    write.csv(data, file="evidence.csv")
   
-  write.csv(data, file="evidence.csv")
+    #data <- data %>% filter(round > 3)
   
-  #data <- data %>% filter(round > 3)
-  
-  p <- ggplot(data, aes(x = round, y = value, colour = model, group = model)) + 
-    geom_line() + 
-    facet_grid(data ~ ., scales="free") + 
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
+    p <- ggplot(data, aes(x = round, y = value, colour = model, group = model)) + 
+      geom_line() + 
+      facet_grid(data ~ ., scales="free") + 
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 45,hjust = 1)) 
 
-  ggsave(plot = p, filename = "evidence.pdf", height = 20)
+    ggsave(plot = p, filename = "evidence.pdf", height = 20)
+  }
 
   """
 }
