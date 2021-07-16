@@ -110,12 +110,16 @@ process aggregate {
     file analysisCode
     file 'exec_*' from runs1.toList()
   output:
-    file 'results/latest/' into aggregated
+    file 'output' into aggregated
   """
   code/bin/aggregate \
+    --experimentConfigs.managedExecutionFolder false \
     --experimentConfigs.resultsHTMLPage false \
     --dataPathInEachExecFolder gof.csv.gz estimates.csv.gz \
     --keys model.data.source as data model from arguments.tsv
+  mkdir output
+  mv gof.csv output
+  mv estimates.csv output
   """
 }
 
