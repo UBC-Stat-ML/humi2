@@ -122,6 +122,7 @@ process aggregate {
   mkdir output
   mv gof.csv output
   mv estimates.csv output
+  mv logNormalizationContantProgress.csv output
   """
 }
 
