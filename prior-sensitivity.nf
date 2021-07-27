@@ -148,8 +148,14 @@ process plot {
   #!/usr/bin/env Rscript
   require("ggplot2")
   require("dplyr")
+  require("stringr")
   
   data <- read.csv("$aggregated")
+  
+  data\$model <- str_replace_all(data\$model, "[\$].*", "")
+  data\$model <- str_replace_all(data\$model, "humi[.]models[.]", "")
+  
+  data\$dataset <- str_replace_all(data\$dataset, "[.]csv", "")
   
   p <- ggplot(data, aes(x = factor(priorHyperParameter), y = logRatio)) + 
     coord_flip() + 
